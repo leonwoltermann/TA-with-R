@@ -1,0 +1,94 @@
+---
+title: "Homework Lesson 5"
+author: "Completed by Leon Woltermann"
+output:
+    pdf_document:
+    toc: yes
+---
+
+```{r}
+file = read.csv(file="Sample_Page_With_Tabular_Data_Morris", sep="\t")
+head(file)
+```
+```{r}
+library(ggplot2)
+
+#The y scale of this graph is too big. This is because of the value of the West for the year 2000 which increased by the factor of 25 to the year 1900. Even 1800 to 1900 is still a quite big leap. An approach to this is to exclude the year 1900 and 2000. This graph could offer a more precise insight into the data in the years before.
+
+ggplot(file) +
+  geom_line(aes(x = Year, y = West, color="red")) +
+  geom_line(aes(x = Year, y = East)) +
+  scale_y_log10()
+```
+```{r}
+library(dplyr)
+temp <- file %>%
+  filter(Year < 1900)
+
+ggplot(temp) + geom_line(aes(x = Year, y = East, color = "red")) +
+geom_line(aes(x = Year, y = West))
+```
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Cmd+Option+I*.
+```{r}
+west <- file$West
+east <- file$East
+years <- file$Year
+
+west_lead <- west > east
+east_lead <- west < east
+
+years_west_lead <- years[west_lead]
+years_east_lead <- years[east_lead]
+
+cat("These are the years the west led in war making capacities:", years_west_lead, "\n")
+cat("And these are the years the east led in war making capacities:", years_east_lead)
+```
+```{r}
+file2 = read.csv(file="settlement_sizes", sep="\t")
+head(file2)
+```
+```{r}
+west_before1900 <- file2 %>%
+filter(West.East=="West", Year < 1900)
+
+east_before1900 <- file2 %>%
+  filter(West.East=="East", Year < 1900)
+
+head(west)
+```
+
+
+```{r}
+ggplot() +
+  geom_line(data = west_before1900, aes(x = Year, y = Points, color="red")) +
+  geom_line(data= east_before1900, aes(x = Year, y = Points))
+```
+```{r}
+west <- file2 %>%
+  filter(West.East=="West") %>%
+  select(-West.East)
+
+east <- file2 %>%
+  filter(West.East=="East") %>%
+  select(-West.East)
+
+west_east <- west %>%
+  left_join(east, by = "Year")
+
+west_east_after5000BCE <- west_east %>%
+  filter(Year > -5000)
+
+west_points <- west_east_after5000BCE$Points.x
+east_points <- west_east_after5000BCE$Points.y
+years_points <- west_east_after5000BCE$Year
+
+west_lead2 <- west_points>east_points
+east_lead2 <- west_points<east_points
+
+years_west_lead2 <- years_points[west_lead2]
+years_east_lead2 <- years_points[east_lead2]
+
+cat("These are the years the west led in settlement points:", years_west_lead2, "\n")
+cat("And these are the years the east led settlement points:", years_east_lead2)
+```

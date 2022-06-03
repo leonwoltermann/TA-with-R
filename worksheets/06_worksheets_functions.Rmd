@@ -1,8 +1,10 @@
 ---
 title: "Functions"
-author: 'Completed by ...'
-output: 
-  html_document: 
+author: "Completed by Leon Woltermann"
+output:
+  pdf_document:
+    toc: yes
+  html_document:
     toc: yes
 ---
 
@@ -49,6 +51,7 @@ paste(c("First", "Second", "Third"), collapse = " -> ")
 ```
 
 (@) What function is being called above? What are the two arguments to the function? What do those arguments do?
+> The name of the function is paste. The two arguments are the vector and collapse. The function transforms the vector of three strings into one string. the argument collapse defines the string that is in between every string which is joined together from the vector.
 
 ## Function definition
 
@@ -58,10 +61,11 @@ A function definition has three parts: the name of the function (which is the sa
 hello <- function(person) {
   paste("Hello,", person)
 }
-hello("Your name here")
+hello("Leon")
 ```
 
 (@) What is the function name? What is the name of the single argument to the function? What is the body of the function and how is it delimited? What output does it produce?
+> The name of the function is hello. The name of the single argument is person. The body of the function is the function paste with the string "hello" and the input argument. The output is a pasted string of the "hello" and the input argument.
 
 Let's make a more complicated function. This one will take some arbitrary greeting as well as a person's name, and greet that person using that name.
 
@@ -69,8 +73,8 @@ Let's make a more complicated function. This one will take some arbitrary greeti
 greet <- function(person, greeting = "Hello") {
   paste(greeting, person)
 }
-greet("Your name here", greeting = "Howdy")
-greet("Your name here")
+greet("Leon", greeting = "Howdy")
+greet("Leon")
 ```
 
 Notice that we made the `greeting =` argument have a default value. Now we can call it with an explicit value (e.g., "Howdy") and the function will use that. Or we can not give any value to the `greeting = ` argument, and the function will use "Hello" automatically.
@@ -78,7 +82,10 @@ Notice that we made the `greeting =` argument have a default value. Now we can c
 (@) Write a function that greets someone with an arbitrary greeting, as in the example above, but then adds an argument `pleasantry = ` which lets you specify something pleasant to say to the person. Make sure the `pleasantry =` argument has a default value.
 
 ```{r}
-
+greet <- function(person, greeting = "Hello", pleasantry = "How are you?") {
+  paste(greeting, person, pleasantry)
+}
+greet("Leon")
 ```
 
 (@) Between 1582 and 1752, England and its colonies were on the Julian calendar while most of the rest of Europe was on the Gregorian calendar. Simplifying a [complex historical problem](https://en.wikipedia.org/wiki/Old_Style_and_New_Style_dates) with representing dates quite a bit, we can say that dates before 1752 were "Old Style" and in 1752 and after were "New Style." Write a function called `check_date_style()` which takes an arbitrary vector of years and returns either "Old Style" or "New Style" as appropriate. Run the function on the vector below. Hint: You will need to use the `ifelse()` function in the body of your function. Look it up with `?ifelse`.
@@ -86,6 +93,12 @@ Notice that we made the `greeting =` argument have a default value. Now we can c
 ```{r}
 years <- c(1758, 1752, 1756, 1740, 1746, 1755, 1749, 1749, 1753, 1759,
            1758, 1752, 1759, 1749, 1756, 1757, 1750, 1744, 1750, 1748)
+
+check_date_style <- function(years) {
+  ifelse(years > 1752, "New Style", "Old Style")
+}
+
+check_date_style(years)
 ```
 
 
@@ -97,7 +110,7 @@ Below is the boilerplate for a function that does that kind of rescaling. Flesh 
 
 ```{r}
 rescale <- function(x) {
-  x
+ return((x-min(x))/(max(x)-min(x)))
 }
 
 input <- c(-6, 3, 1, 2, 10, 3)
@@ -105,6 +118,8 @@ output <- c(0, 0.5625, 0.4375, 0.5000, 1.0, 0.5625)
 
 all(output == rescale(input))
 ```
+
+
 
 (@) Hard question: Can you rewrite that function as `rescale2` so that it maps the domain (the input) to an arbitrary range (the output)? In other words, can you scale the values to a range other than `0` and `1`?
 

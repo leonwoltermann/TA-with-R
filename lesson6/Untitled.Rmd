@@ -1,0 +1,199 @@
+---
+title: "Lesson 6 Homework"
+author: "Leon Woltermann"
+output:
+  pdf_document: default
+  html_notebook: default
+---
+```{r}
+library(haven)
+library(dplyr)
+library(ggplot2)
+```
+
+```{r}
+file <- read_dta('Bosker_Data/bagdad-london--finalRestat.dta')
+file
+```
+```{r}
+#What is the chronological extent of this data?
+min(file$year)
+max(file$year)
+
+#or
+
+summary(file$year)
+```
+```{r}
+#What periods can it be divided into? How can we do that?
+
+#First approach:
+#Create a vector with all the periods in the data set. 
+#Create a vector with the labels for the periods according to the rows of the first vector.
+#Then create a dataframe from both vectors and left join it with the main data set.
+
+year <- c(seq(800, 1800, 100))
+period <- c("Middle Ages",  "Middle Ages", "Middle Ages", "Middle Ages", "Middle Ages", 
+            "Middle Ages", "Middle Ages", "Modern Times", "Modern Times", 
+            "Modern Times", "Modern Times")
+
+periods <- data.frame(year, period)
+
+file2 <- file %>%
+  left_join(periods, by="year")
+head(file2)
+```
+```{r}
+#What periods can it be divided into? How can we do that?
+
+#Second approach:
+#Create a new column "century" with mutate based on conditions. 
+
+
+library(tidyverse)
+year2 <- c(seq(800, 1800, 1))
+
+centuries <- tibble(year2)
+
+centuries %>%
+  mutate(century = ifelse(year2<800, "8th Century",
+                          ifelse(year2<900,"9th Century", 
+                                 ifelse(year2<1000, "10th Century",
+                                        ifelse(year2<1100,"11th Century",
+                                               ifelse(year2<1200,"12th Century",
+                                                      ifelse(year2<1300,"13th Century",
+                                                             ifelse(year2<1400,"14th Century",
+                                                                    ifelse(year2<1500,"15th Century",
+                                                                           ifelse(year2<1600,"16th Century",
+                                                                                  ifelse(year2<1700,"17th Century",
+                                                                                         ifelse(year2<1800,"18th Century", "later"))))))))))))
+
+head(centuries)
+```
+
+```{r}
+#Can you generate a cumulative graph of population over time, divided into these periods? 
+
+#Summarize population grouped by year and period.
+population_growth <- file2 %>%
+  select(city, country, year, citypop_le10, citypop_le5, period) %>%
+  group_by(year, period) %>%
+  summarize(population = sum(citypop_le5 * 1000))
+population_growth
+
+#Select the periods, so they can be plotted separately.
+middle_ages_population <- population_growth %>%
+  filter(period == "Middle Ages")
+modern_times_population <- population_growth %>%
+  filter(period == "Modern Times")
+
+
+ggplot() + geom_line(data=middle_ages_population, aes(x= year, y=population, color=period)) + geom_line(data=modern_times_population,aes(x= year, y=population, color=period))
+
+```
+
+```{r}
+#population in north african cities
+
+#the variable me_na indicates whether or not a city is located in the Middle East or North Africa
+#the variable arab_peninsula indicates whether or not a city is located on the Arabian Peninsula
+#turkey is filtered out manually
+northAfrica_citites <- file2 %>%
+  filter(me_na == 1) %>%
+  filter(arab_peninsula != 1) %>%
+  filter(country != "Turkey")
+
+#Summarize population grouped by year and period.
+population_growth_northAfrica <- northAfrica_citites %>%
+  select(city, country, year, citypop_le10, citypop_le5, period) %>%
+  group_by(year, period) %>%
+  summarize(population = sum(citypop_le5 * 1000))
+
+#Select the periods, so they can be plotted separately.
+middle_ages_northAfrica <- population_growth_northAfrica %>%
+  filter(period == "Middle Ages")
+modern_times_northAfrica <- population_growth_northAfrica %>%
+  filter(period == "Modern Times")
+
+ggplot() + geom_line(data=middle_ages_northAfrica, aes(x= year, y=population, color=period)) + geom_line(data=modern_times_northAfrica,aes(x= year, y=population, color=period))
+```
+
+```{r}
+#Population in European cities
+
+#I don't know if it is that simple. 
+#Since me_na indicates whether or not a city is located in the Middle East or North Africa, 
+#disabling it would show any other city except in this region. 
+european_cities <- file2 %>%
+  filter(me_na == 0)
+
+#After checking it with unique(european_cities$country) it seems to be correct.
+
+population_growth_europe <- european_cities %>%
+  select(city, country, year, citypop_le10, citypop_le5, period) %>%
+  group_by(year, period) %>%
+  summarize(population = sum(citypop_le5 * 1000))
+
+
+middle_ages_europe <- population_growth_europe %>%
+  filter(period == "Middle Ages")
+modern_times_europe <- population_growth_europe %>%
+  filter(period == "Modern Times")
+
+ggplot() + geom_line(data=middle_ages_europe, aes(x= year, y=population, color=period)) + geom_line(data=modern_times_europe,aes(x= year, y=population, color=period))
+```
+
+
+```{r}
+#Ottoman empire
+ottoman_citites <- file2 %>%
+  filter(ottoman == 1)
+
+#We want to find out when there were the most cities in a century or in other words count the observations in the column year.
+number_cities_perYear <- ottoman_citites %>%
+  group_by(year) %>%
+  summarize(citites_per_century = n())
+
+#largest number of cities
+#The which.max() function returns the maximum value of a column.
+number_cities_perYear[which.max(number_cities_perYear$citites_per_century),]
+
+#When was its population at the highest?
+population_ottoman <- ottoman_citites %>%
+  select(city, country, year, citypop_le5) %>%
+  group_by(year) %>%
+  summarize(population = sum(citypop_le5 * 1000))
+
+#population_ottoman
+population_ottoman[which.max(population_ottoman$population),]
+
+```
+
+```{r}
+#Christiandom and Islamdom?
+
+#The variable muslim indicates whether or not a city falls under Muslim rule. 
+#I am not sure whether this is sufficient in this dataset, 
+#as Islamdom signifies the places (cities) where Islam is
+#the predominant religion and not under Muslim rule. 
+#Vice versa Muslim rule does not indicate that Islam is the predominant religion. 
+islam_citites <- file2 %>%
+  filter(muslim == 1)
+
+#Here as well, I am not sure whether disabling the muslim variable gives us Christiandom
+christian_citites <- file2 %>%
+   filter(muslim == 0) 
+
+#What are the largest cities of Islamdom for each reported period?
+#the filter returns the row with the biggest value in citypop_le10 of each group
+islam_citites %>%
+  group_by(year) %>%
+  filter(citypop_le10==max(citypop_le10))
+
+#What are the largest western cities of Islamdom between 1000 and 1500 CE?
+islam_citites %>%
+  filter(me_na != 1) %>%
+  group_by(year) %>%
+  filter(citypop_le10==max(citypop_le10))
+```
+

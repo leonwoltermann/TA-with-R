@@ -1,8 +1,10 @@
 ---
 title: "Basics of ggplot2"
-author: 'Completed by ...'
-output: 
-  html_document: 
+author: "Completed by Leon Woltermann"
+output:
+  pdf_document:
+    toc: yes
+  html_document:
     toc: yes
 ---
 
@@ -76,16 +78,19 @@ ggplot(paulist_missions, aes(x = confessions, y = converts)) +
 
 (@) What are the three parts of the plot, as listed above?
 
->
+>1. The dataset: paulist_missions
+2. The specification of variables: confessions and converts
+3. The glyph: geom_point()
 
 (@) What is the relationship between each row in the dataset and each glyph in the plot?
 
->
+>A glyph in the plot represents one line. It is positioned according to the quantity of confessions (x axis) and converts (y axis).
 
 (@) Modify that plot so that converts are on the x-axis and confessions are y-axis.
 
 ```{r}
-
+ggplot(paulist_missions, aes(y = confessions, x = converts)) +
+  geom_point()
 ```
 
 
@@ -108,7 +113,8 @@ ggplot(paulist_missions, aes(x = confessions, y = converts, color = duration_wee
 (@) Make a different plot from any of the above using `days`, `converts`, and `confessions` variables. Try using the `x`, `y`, and `size` properties.
 
 ```{r}
-
+ggplot(paulist_missions, aes(x = confessions, y = converts, size=duration_days, color=duration_days)) +
+  geom_point()
 ```
 
 We can change the labels of the plot using the `labs()` function as below. (Alternatively, you can use the `xlab()`, `ylab()`, and `ggtitle()` functions.)
@@ -126,7 +132,12 @@ ggplot(paulist_missions, aes(x = confessions, y = converts,
 (@) Copy your plot above and add informative labels.
 
 ```{r}
-
+ggplot(paulist_missions, aes(x = confessions, y = converts, size=duration_days, color=duration_days)) +
+  geom_point() +
+labs(title = "Paulist missions",
+       x = "Confessions (= attendance)",
+       y = "Converts (to Roman Catholicism)",
+       color = "Duration of mission")
 ```
 
 
@@ -146,10 +157,16 @@ ggplot(paulist_missions, aes(x = converts)) +
 (@) Create a histogram of the number of confessions.
 
 ```{r}
-
+ggplot(paulist_missions, aes(x = confessions)) +
+  geom_histogram()
 ```
 
 (@) Can you change the number of bins? (Hint: try `bins =` or `binwidth =`. See `?geom_histogram`.) 
+
+```{r}
+ggplot(paulist_missions, aes(x = confessions)) +
+  geom_histogram(bins = 10)
+```
 
 
 Bin parameters can be used to modify bin properties. For example, `bins=30` (example: `geom_histogram(bins=20)`) will distribute all data into 30 bins; `binwidth=20` (example: `geom_histogram(binwidth=20)`) will distribute data into bins of width 20. For other parameters, check [ggplot2.tidyverse.org/reference/geom_histogram](https://ggplot2.tidyverse.org/reference/geom_histogram.html).
@@ -166,25 +183,33 @@ ggplot(paulists_by_year, aes(x = year, y = converts)) +
 (@) Create a line chart of the number of confessions. Can you also add a layer of points in addition to the line?
 
 ```{r}
-
+ggplot(paulists_by_year, aes(x = year, y = confessions)) +
+  geom_line() + geom_point()
 ```
 
 (@) Do you see any issues with the current graph? Please, explain.
 
->
+>There are quite big jumps between data. The graph makes the data look complete and connects two dots even if they are far away.
 
 (@) Can you create a line chart with a line for the number of converts and a line for the number of confessions? (Hint: you will need two calls to `geom_line()`. And instead of specifying the `y` value in the call to `ggplot()` you will do it in the functons for each layer. For instance: `geom_line(aes(y = converts))`.)
 
 **MGR Comment:** We can barely se the *converts* line. Can you make these lines visually more comparable? (*Hint*: when we are looking at trends, the first thing we want to see is ups and downs).
 
 ```{r}
+ggplot(paulists_by_year) + geom_line(aes(x = year, y = converts * 1000, color="red")) +
+  geom_line(aes(x = year, y = confessions)) 
 
+library(gridExtra)
+plot1 <- ggplot(paulists_by_year) + geom_line(aes(x = year, y = converts))
+plot2 <- ggplot(paulists_by_year) + geom_line(aes(x = year, y = confessions)) 
+grid.arrange(plot1, plot2, ncol=2)
 ```
 
 (@) Can you create a plot with a single line for the ratio of converts to confessions? (Hint: the ratio of converts to confessions is given by `converts / confessions`.)
 
 ```{r}
-
+ggplot(data = paulists_by_year) +
+  geom_line(aes(x=year, y = converts/confessions))
 ```
 
 If you map `color = ` to a categorical value, you will get a different colored line for each category.
@@ -209,7 +234,8 @@ ggplot(paulist_missions, aes(x = order)) +
 (@) Create a plot with a count of the number of missions in each state.
 
 ```{r}
-
+ggplot(paulist_missions, aes(x = state)) +
+  geom_bar()
 ```
 
 **MGR Comment:** Such bar graphs are rather useless because of their readability (or, better, the lack of it). Items got ogranized alphabetically, but some other principle --- from east to west, for example --- could work better for this kind of data.
@@ -228,13 +254,15 @@ ggplot(paulist_missions, aes(x = converts, y = confessions)) +
 (@) Create a plot with facets for each state.
 
 ```{r}
-
+ggplot(paulist_missions, aes(x = converts, y = confessions)) +
+  geom_count(shape = 1, alpha = 0.6) +
+  facet_wrap(~ state)
 ```
 
 
 (@) Notice that we are using `geom_count()`. What does it do? (Hint: `?geom_count`.)
 
->
+> "counts the number of observations at each given location": basically it counts the occurences of data in certain columns and plots them.
 
 ## Labels
 
@@ -260,7 +288,12 @@ mn_missions_with_labels <- paulist_missions %>%
 (@) Make a plot like the one immediately above but using the `mn_missions_with_labels` data frame and the labels in `label` column.
 
 ```{r}
+mn_missions_label <- mn_missions_with_labels %>% 
+  filter(state == "MN", converts > 0)
 
+ggplot(mn_missions_label, aes(x = converts, y = confessions)) +
+ geom_point() +
+  geom_text_repel(aes(label = label))
 ```
 
 ## Create your own plots
@@ -274,23 +307,63 @@ You may wish to look at Jenny Bryan's [R Graph Catalog](http://shiny.stat.ubc.ca
 (@) Plot 1
 
 ```{r}
+europe <- gapminder %>%
+  filter(continent == "Europe") %>%
+  group_by(year) %>%
+  summarise(life = mean(lifeExp))
+
+  
+    
+africa <- gapminder %>%
+  filter(continent == "Africa")%>%
+  group_by(year) %>%
+  summarise(life = mean(lifeExp))
+
+asia <- gapminder %>%
+  filter(continent == "Asia")%>%
+  group_by(year) %>%
+  summarise(life = mean(lifeExp))
+
+
+ggplot() + geom_line(data=europe, aes(x = year, y = life, color="red")) +
+  geom_line(data= africa, aes(x = year, y = life, color= "yellow")) +
+  geom_line(data= asia, aes(x = year, y = life)) 
+
 
 ```
 
-> Explanation of plot 1.
+> This graph compares the development of life expactancy on the continents of europe, africa, and asia.
 
 (@) Plot 2
 
 ```{r}
+indo <- gapminder %>%
+  filter(country == "Indonesia")
+malay <- gapminder %>%
+  filter(country == "Malaysia")
+
+ggplot() + geom_line(data=indo, aes(x = year, y = gdpPercap, color="red")) +
+  geom_line(data= malay, aes(x = year, y = gdpPercap)) 
 
 ```
 
-> Explanation of plot 2.
+> This graph compares the development of growth of the gdp per capita between Indonesia and Malaysia. 
 
 (@) Plot 3
 
 ```{r}
+china <- gapminder %>%
+  filter(country == "China")
+
+india <- gapminder %>%
+    filter(country == "India")
+
+library(gridExtra)
+plot1 <- ggplot(china) + geom_line(aes(x = year, y = lifeExp * 10)) + geom_line(aes(x = year, y = gdpPercap, color="red"))
+plot2 <- ggplot(india) + geom_line(aes(x = year, y =  lifeExp * 10)) + geom_line(aes(x = year, y = gdpPercap, color="red"))
+grid.arrange(plot1, plot2, ncol=2)
+
 
 ```
 
-> Explanation of plot 3.
+> This graph compares the connection of life expectancy and gdp per capita in china and india.

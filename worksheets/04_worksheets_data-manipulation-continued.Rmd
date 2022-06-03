@@ -1,8 +1,10 @@
 ---
 title: "More data manipulation with dplyr and tidy"
-author: "Completed by ..."
-output: 
-  html_document: 
+author: "Completed by Leon Woltermann"
+output:
+  pdf_document:
+    toc: yes
+  html_document:
     toc: yes
 ---
 
@@ -25,8 +27,8 @@ To begin, we will load the necessary packages, as well as the Methodist data.
 ```{r, message=FALSE}
 library(tidyverse)
 library(historydata)
-data("methodists")
-methodists
+#data("methodists")
+#methodists
 ```
 
 ### `methodists` data (`MGR`)
@@ -37,14 +39,14 @@ If `methodists` dataset does not load, we can try the following. First, restart 
 devtools::install_github("ropensci/historydata", force=TRUE)
 library(historydata)
 data(methodists)
-methodists
+#methodists
 ```
 
 Alternatively, we can load the data differently. The package itself is available on gitHub ([https://github.com/ropensci/historydata](https://github.com/ropensci/historydata)), so we can try a different way of getting the data that we need for the worksheet. Specifically, if we know the exact address of the data file (url), we can open it with the `read.csv` command, like shown below (you need to be connected to Internet, of course): 
 
 ```{r}
 methodists <- read.csv("https://raw.githubusercontent.com/ropensci/historydata/master/data-raw/methodists.csv")
-methodists
+#methodists
 ```
 
 This data file, however, is slightly different from what we need, so some minor modifications will be necessary. You do not need to be concerned about the code in the next chunk, just run it. 
@@ -138,25 +140,63 @@ ggplot(methodists_region, aes(x = members_white, y = members_black)) +
 (@) Can you summarize the racial composition of the different regions by year (i.e., a region had a certain percentage white and black members for a given year) and create a plot of the changing racial composition in each region over time?
 
 ```{r}
+methodists_full <- methodists %>% 
+  select(year, state, members_total, members_white, members_black)
+
+methodists_full_region <- methodists_full %>%
+  left_join(regions, by="state") %>%
+  select(-state)
+
+methodists_full_region
+
+racial_composition <- methodists_full_region %>%
+  filter(!is.na(region)) %>%
+  filter(members_total!=0) %>%
+  group_by(year, region) %>%
+  summarize(members_total = sum(members_total), members_white = sum(members_white), members_black = sum(members_black)) %>%
+  mutate(percentage_white = members_white / members_total * 100, percentage_black = members_black / members_total * 100) %>%
+  mutate(relation = percentage_black / percentage_white * 100)
+  
+racial_composition
+
+ggplot(racial_composition) +
+geom_line(aes(x = year, y = relation)) + facet_wrap(~ region)
+
+ggplot(racial_composition) +
+  geom_line(aes(x=year,y=percentage_white), size=1, col="red") +
+  geom_line(aes(x=year,y=percentage_black), size=1, col="blue") +
+  facet_wrap(~ region)
 
 ```
 
 (@) In the europop package there are two data frames, `europop` with the historical populations of European cities, and `city_coords` which has the latitudes and longitudes of those cities. Load that package and join the two tables together. Can you get the populations of cities north of 48° of latitude?
 
 ```{r}
+#devtools::install_github("mdlincoln/europop", force=TRUE)
+library(europop)
+data("europop")
 
+merged_cities <- europop %>%
+  left_join(city_coords, by="city") %>%
+  filter(lat>=42)
+  
+
+merged_cities[merged_cities$lat > 42, ]
 ```
 
 (@) In the historydata package there are two tables, `judges_people` and `judges_appointments`. Join them together. What are the names of black judges who were appointed to the Supreme Court?
 
 ```{r}
+judge_merge <- judges_people %>%
+  left_join(judges_appointments, by="judge_id")
 
+judge_merge[judge_merge$court_name == "Supreme Court of the United States" & judge_merge$race == "African American",]
 ```
 
 (@) What courts did those justices serve on before the Supreme Court?
 
 ```{r}
-
+filter(judge_merge, judge_id == 1489 | judge_id == 2362, court_name != "Supreme Court of the United States")
 ```
 
 ## Data reshaping (`spread()` and `gather()`)
@@ -225,24 +265,35 @@ methodists_by_year_race
 (@) The data in `methodists_by_year_race` could be tidier still. While `white`, `black`, and `indian` are variables, it is perhaps better to think of them as two different variables. One variable would be `race`, containing the racial descriptions that the Methodists used, and another would be `members`, containing the number of members. Using the `gather()` function, create that data frame.
 
 ```{r}
+temp <- methodists_by_year_race %>%
+  gather(race, members, -year)
 
+temp
 ```
+
 
 (@) Use the data frame you created in the previous step to create a line plot of membership over time, mapping the `race` column to the `color` aesthetic.
 
 ```{r}
-
+ggplot(temp, 
+       aes(x = year, y = members, color = race)) +
+  geom_line()
 ```
 
 (@) Now use that newly tidied data frame to create a wide data frame, where the years are the column headers and the racial descriptions are the rows.
 
 ```{r}
+temp2 <- temp %>%
+  spread(year, members)
 
+temp2
 ```
 
 (@) Now use the same tidied data to create a wide data frame where the racial descriptions are column headers and the years are rows.
 
 ```{r}
-
+temp3 <- temp %>%
+  spread(race, members)
+temp3
 ```
 
